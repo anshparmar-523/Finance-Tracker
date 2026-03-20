@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Finance Tracker{% endblock %}
+{% block content %}
+
+<div class="grid-3" style="margin-bottom:1.5rem">
+  <div class="stat-card">
+    <div class="label">Income this month</div>
+    <div class="value income">₹{{ "%.0f"|format(income) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Expenses this month</div>
+    <div class="value expense">₹{{ "%.0f"|format(expenses) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Net Balance</div>
+    <div class="value balance">₹{{ "%.0f"|format(balance) }}</div>
+  </div>
+</div>
+
+<!-- Add Transaction -->
+<div class="card" style="margin-bottom:1.5rem">
+  <h2>Add Transaction</h2>
+  <form action="{{ url_for('add_transaction') }}" method="POST">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Type</label>
+        <select name="type" required>
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <input type="text" name="category" placeholder="e.g. Groceries" required />
+      </div>
+      <div class="form-group">
+        <label>Amount (₹)</label>
+        <input type="number" name="amount" step="0.01" min="0.01" required />
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" name="date" value="{{ today }}" />
+      </div>
+      <div class="form-group">
+        <label>Note</label>
+        <input type="text" name="note" placeholder="Optional note" />
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button type="submit" class="btn btn-primary" style="width:100%">Add</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="grid-2" style="margin-bottom:1.5rem">
+  <!-- Bar Chart -->
+  <div class="card">
+    <h2>Income vs Expenses — Last 6 Months</h2>
+    <canvas id="barChart" height="200"></canvas>
+  </div>
+  <!-- Pie Chart -->
+  <div class="card">
+    <h2>Expense Breakdown — This Month</h2>
+    <canvas id="pieChart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- Budget Progress -->
+{% if budget_usage %}
+<div class="card" style="margin-bottom:1.5rem">
+  <h2>Budget Usage — This Month</h2>
+  {% for b in budget_usage %}
+  <div style="margin-bottom:0.9rem">
+    <div style="display:flex;justify-content:space-between;font-size:0.88rem">
+      <span><strong>{{ b.category }}</strong></span>
+      <span style="color:var(--muted)">₹{{ "%.0f"|format(b.spent) }} / ₹{{ "%.0f"|format(b.limit) }}  ({{ b.percent }}%)</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar {% if b.percent >= 100 %}over{% endif %}" style="width:{{ b.percent }}%"></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recent Transactions -->
+<div class="card">
+  <h2>Recent Transactions</h2>
+  <table>
+    <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for t in recent %}
+      <tr>
+        <td>{{ t.date }}</td>
+        <td><span class="badge {{ t.type }}">{{ t.type }}</span></td>
+        <td>{{ t.category }}</td>
+        <td style="font-weight:bold;color:{% if t.type=='income' %}var(--green){% else %}var(--red){% endif %}">
+          ₹{{ "%.2f"|format(t.amount) }}
+        </td>
+        <td style="color:var(--muted)">{{ t.note or "—" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" style="text-align:center;color:var(--muted)">No transactions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+async function loadCharts() {
+  const barRes = await fetch('/api/monthly-chart');
+  const barData = await barRes.json();
+  new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: barData.labels,
+      datasets: [
+        { label: 'Income',   data: barData.income,   backgroundColor: '#1a7a4a' },
+        { label: 'Expenses', data: barData.expenses, backgroundColor: '#b91c1c' },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top' } } }
+  });
+
+  const pieRes = await fetch('/api/category-pie');
+  const pieData = await pieRes.json();
+  new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: pieData.labels,
+      datasets: [{ data: pieData.values, backgroundColor: ['#2e75b6','#1f4e79','#0d1b2a','#6b9fd4','#93c5fd','#1e40af','#3b82f6'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'right' } } }
+  });
+}
+loadCharts();
+</script>
+{% endblock %}

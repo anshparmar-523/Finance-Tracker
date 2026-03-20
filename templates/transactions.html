@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Transactions — Finance Tracker{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>All Transactions</h2>
+
+  <!-- Filter bar -->
+  <form method="GET" action="{{ url_for('transactions') }}">
+    <div class="filter-bar">
+      <div>
+        <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Category</label>
+        <select name="category">
+          <option value="">All Categories</option>
+          {% for c in categories %}
+          <option value="{{ c.category }}" {% if filter_cat == c.category %}selected{% endif %}>
+            {{ c.category }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Type</label>
+        <select name="type">
+          <option value="">All Types</option>
+          <option value="income"  {% if filter_type == 'income'  %}selected{% endif %}>Income</option>
+          <option value="expense" {% if filter_type == 'expense' %}selected{% endif %}>Expense</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.78rem;color:transparent;display:block;margin-bottom:4px;">.</label>
+        <button type="submit" class="btn btn-primary">Filter</button>
+      </div>
+      {% if filter_cat or filter_type %}
+      <div>
+        <label style="font-size:0.78rem;color:transparent;display:block;margin-bottom:4px;">.</label>
+        <a href="{{ url_for('transactions') }}" class="btn" style="background:#e5e7eb;color:var(--text);">Clear</a>
+      </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Note</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for t in transactions %}
+      <tr>
+        <td>{{ t.date }}</td>
+        <td><span class="badge {{ t.type }}">{{ t.type }}</span></td>
+        <td>{{ t.category }}</td>
+        <td style="font-weight:bold;color:{% if t.type=='income' %}var(--green){% else %}var(--red){% endif %}">
+          ₹{{ "%.2f"|format(t.amount) }}
+        </td>
+        <td style="color:var(--muted)">{{ t.note or "—" }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('delete_transaction', txn_id=t.id) }}"
+                onsubmit="return confirm('Delete this transaction?')">
+            <button type="submit" class="btn btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="text-align:center;color:var(--muted)">No transactions found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Budgets — Finance Tracker{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <h2>Set / Update Budget</h2>
+    <form method="POST" action="{{ url_for('set_budget') }}">
+      <div class="form-group" style="margin-bottom:0.8rem">
+        <label>Category</label>
+        <input type="text" name="category" placeholder="e.g. Groceries" required />
+      </div>
+      <div class="form-group" style="margin-bottom:0.8rem">
+        <label>Monthly Limit (₹)</label>
+        <input type="number" name="limit" step="0.01" min="1" required />
+      </div>
+      <button type="submit" class="btn btn-primary">Save Budget</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Current Budgets</h2>
+    <table>
+      <thead><tr><th>Category</th><th>Monthly Limit</th><th></th></tr></thead>
+      <tbody>
+        {% for b in budgets %}
+        <tr>
+          <td>{{ b.category }}</td>
+          <td>₹{{ "%.2f"|format(b.monthly_limit) }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('delete_budget', budget_id=b.id) }}"
+                  onsubmit="return confirm('Remove this budget?')">
+              <button type="submit" class="btn btn-danger">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center;color:var(--muted)">No budgets set.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
